@@ -1,6 +1,6 @@
 export
 
-DB_MIGRATE_URL = postgres://postgres:postgres@localhost:5432/pc_configurator?sslmode=disable
+DB_MIGRATE_URL = postgres://login:pass@localhost:5432/postgres?sslmode=disable
 MIGRATE_PATH = ./migration/postgres
 CONFIG_PATH=.env.local
 

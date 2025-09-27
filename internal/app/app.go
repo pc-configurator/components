@@ -30,7 +30,7 @@ func Run(ctx context.Context, cfg config.Config) (err error) {
 	defer deps.Postgres.Close()
 
 	deps.RouterHTTP = router.New()
-	ComponentDomain(deps)
+	//uc := usecase.New()
 
 	httpServer := http_server.New(deps.RouterHTTP, cfg.HTTP.Port)
 	defer httpServer.Close()
