@@ -6,33 +6,34 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/pc-configurator/components/config"
+	"github.com/pc-configurator/components/internal/controller/http_router"
+	"github.com/pc-configurator/components/internal/usecase"
 	"github.com/pc-configurator/components/pkg/base_errors"
 	"github.com/pc-configurator/components/pkg/http_server"
 	"github.com/pc-configurator/components/pkg/logger"
-	"github.com/pc-configurator/components/pkg/postgres"
 	"github.com/pc-configurator/components/pkg/router"
+	"github.com/pc-configurator/components/pkg/validation"
+
+	adapterPostgres "github.com/pc-configurator/components/internal/adapters/postgres"
+	commonPostgres "github.com/pc-configurator/components/pkg/postgres"
 )
 
-type Dependencies struct {
-	RouterHTTP *chi.Mux
-	Postgres   *postgres.Pool
-}
-
-func Run(ctx context.Context, cfg config.Config) (err error) {
-	var deps Dependencies
-
-	deps.Postgres, err = postgres.New(ctx, cfg.Postgres)
+func Run(ctx context.Context, cfg config.Config) error {
+	pg, err := commonPostgres.New(ctx, cfg.Postgres)
 	if err != nil {
 		return base_errors.WithPath("postgres.New", err)
 	}
-	defer deps.Postgres.Close()
+	defer pg.Close()
 
-	deps.RouterHTTP = router.New()
-	//uc := usecase.New()
+	r := router.New()
+	uc := usecase.New(adapterPostgres.New(pg))
 
-	httpServer := http_server.New(deps.RouterHTTP, cfg.HTTP.Port)
+	http_router.ComponentRouter(r, uc)
+
+	validation.Init()
+
+	httpServer := http_server.New(r, cfg.HTTP.Port)
 	defer httpServer.Close()
 
 	waiting(httpServer)
