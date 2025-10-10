@@ -1,0 +1,148 @@
+openapi: 3.0.0
+info:
+  title: Components API
+  version: "1.0.0"
+  description: API для управления компонентами
+
+servers:
+  - url: https://api.example.com
+    description: Пример сервера
+
+paths:
+  /components/{id}:
+    get:
+      summary: Получить компонент по id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Компонент найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Component"
+        "404":
+          description: Не найдено
+
+    patch:
+      summary: Частичное обновление компонента
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ComponentUpdate"
+      responses:
+        "200":
+          description: Обновлённый компонент
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Component"
+        "404":
+          description: Не найдено
+
+    delete:
+      summary: Удалить компонент по id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Успешно удалено
+        "404":
+          description: Не найдено
+
+  /components:
+    post:
+      summary: Создать компонент
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ComponentCreate"
+      responses:
+        "201":
+          description: Создано
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdResponse"
+        "400":
+          description: Неверный запрос
+
+  /components/all:
+    get:
+      summary: Получить список всех компонентов (с фильтром по категории)
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Список компонентов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Component"
+
+components:
+  schemas:
+    Component:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        price:
+          type: integer
+        category:
+          type: string
+        description:
+          type: string
+
+    ComponentCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        price:
+          type: integer
+        category:
+          type: string
+        description:
+          type: string
+
+    ComponentUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        price:
+          type: integer
+        category:
+          type: string
+        description:
+          type: string
+
+    IdResponse:
+      type: object
+      properties:
+        id:
+          type: string
