@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/rs/zerolog/log"
+	"github.com/pc-configurator/components/pkg/logger"
 )
 
 type Config struct {
@@ -32,7 +32,7 @@ func New(handler http.Handler, c Config) *Server {
 
 	go s.start()
 
-	log.Info().Msg("http server: started on port: " + c.Port)
+	logger.Info("http server: started on port: " + c.Port)
 
 	return s
 }
@@ -40,7 +40,7 @@ func New(handler http.Handler, c Config) *Server {
 func (s *Server) start() {
 	err := s.server.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Error().Err(err).Msg("http server: ListenAndServe")
+		logger.Error(err, "http server: ListenAndServe")
 	}
 }
 
@@ -50,8 +50,8 @@ func (s *Server) Close() {
 
 	err := s.server.Shutdown(ctx)
 	if err != nil {
-		log.Error().Err(err).Msg("http server: s.server.Shutdown")
+		logger.Error(err, "http server: s.server.Shutdown")
 	}
 
-	log.Info().Msg("http server: closed")
+	logger.Info("http server: closed")
 }

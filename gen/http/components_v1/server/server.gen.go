@@ -10,68 +10,30 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/oapi-codegen/runtime"
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 )
 
-// Component defines model for Component.
-type Component struct {
-	Category    *string `json:"category,omitempty"`
-	Description *string `json:"description,omitempty"`
-	ID          *string `json:"id,omitempty"`
-	Name        *string `json:"name,omitempty"`
-	Price       *int    `json:"price,omitempty"`
+// ComponentCreateInput defines model for ComponentCreateInput.
+type ComponentCreateInput struct {
+	Category    string `json:"category"`
+	Description string `json:"description"`
+	Name        string `json:"name"`
+	Price       int    `json:"price"`
 }
 
-// ComponentCreate defines model for ComponentCreate.
-type ComponentCreate struct {
-	Category    *string `json:"category,omitempty"`
-	Description *string `json:"description,omitempty"`
-	Name        *string `json:"name,omitempty"`
-	Price       *int    `json:"price,omitempty"`
+// ComponentCreateOutput defines model for ComponentCreateOutput.
+type ComponentCreateOutput struct {
+	ID string `json:"id"`
 }
 
-// ComponentUpdate defines model for ComponentUpdate.
-type ComponentUpdate struct {
-	Category    *string `json:"category,omitempty"`
-	Description *string `json:"description,omitempty"`
-	Name        *string `json:"name,omitempty"`
-	Price       *int    `json:"price,omitempty"`
-}
-
-// IDResponse defines model for IdResponse.
-type IDResponse struct {
-	ID *string `json:"id,omitempty"`
-}
-
-// GetComponentsAllParams defines parameters for GetComponentsAll.
-type GetComponentsAllParams struct {
-	Category *string `form:"category,omitempty" json:"category,omitempty"`
-}
-
-// PostComponentsJSONRequestBody defines body for PostComponents for application/json ContentType.
-type PostComponentsJSONRequestBody = ComponentCreate
-
-// PatchComponentsIDJSONRequestBody defines body for PatchComponentsID for application/json ContentType.
-type PatchComponentsIDJSONRequestBody = ComponentUpdate
+// CreateComponentJSONRequestBody defines body for CreateComponent for application/json ContentType.
+type CreateComponentJSONRequestBody = ComponentCreateInput
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Создать компонент
 	// (POST /components)
-	PostComponents(w http.ResponseWriter, r *http.Request)
-	// Получить список всех компонентов (с фильтром по категории)
-	// (GET /components/all)
-	GetComponentsAll(w http.ResponseWriter, r *http.Request, params GetComponentsAllParams)
-	// Удалить компонент по id
-	// (DELETE /components/{id})
-	DeleteComponentsID(w http.ResponseWriter, r *http.Request, id string)
-	// Получить компонент по id
-	// (GET /components/{id})
-	GetComponentsID(w http.ResponseWriter, r *http.Request, id string)
-	// Частичное обновление компонента
-	// (PATCH /components/{id})
-	PatchComponentsID(w http.ResponseWriter, r *http.Request, id string)
+	CreateComponent(w http.ResponseWriter, r *http.Request)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -80,31 +42,7 @@ type Unimplemented struct{}
 
 // Создать компонент
 // (POST /components)
-func (_ Unimplemented) PostComponents(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Получить список всех компонентов (с фильтром по категории)
-// (GET /components/all)
-func (_ Unimplemented) GetComponentsAll(w http.ResponseWriter, r *http.Request, params GetComponentsAllParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Удалить компонент по id
-// (DELETE /components/{id})
-func (_ Unimplemented) DeleteComponentsID(w http.ResponseWriter, r *http.Request, id string) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Получить компонент по id
-// (GET /components/{id})
-func (_ Unimplemented) GetComponentsID(w http.ResponseWriter, r *http.Request, id string) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Частичное обновление компонента
-// (PATCH /components/{id})
-func (_ Unimplemented) PatchComponentsID(w http.ResponseWriter, r *http.Request, id string) {
+func (_ Unimplemented) CreateComponent(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -117,113 +55,11 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
-// PostComponents operation middleware
-func (siw *ServerInterfaceWrapper) PostComponents(w http.ResponseWriter, r *http.Request) {
+// CreateComponent operation middleware
+func (siw *ServerInterfaceWrapper) CreateComponent(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PostComponents(w, r)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// GetComponentsAll operation middleware
-func (siw *ServerInterfaceWrapper) GetComponentsAll(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetComponentsAllParams
-
-	// ------------- Optional query parameter "category" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "category", r.URL.Query(), &params.Category)
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "category", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetComponentsAll(w, r, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// DeleteComponentsID operation middleware
-func (siw *ServerInterfaceWrapper) DeleteComponentsID(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "id" -------------
-	var id string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DeleteComponentsID(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// GetComponentsID operation middleware
-func (siw *ServerInterfaceWrapper) GetComponentsID(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "id" -------------
-	var id string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetComponentsID(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// PatchComponentsID operation middleware
-func (siw *ServerInterfaceWrapper) PatchComponentsID(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "id" -------------
-	var id string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PatchComponentsID(w, r, id)
+		siw.Handler.CreateComponent(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -347,138 +183,34 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/components", wrapper.PostComponents)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/components/all", wrapper.GetComponentsAll)
-	})
-	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/components/{id}", wrapper.DeleteComponentsID)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/components/{id}", wrapper.GetComponentsID)
-	})
-	r.Group(func(r chi.Router) {
-		r.Patch(options.BaseURL+"/components/{id}", wrapper.PatchComponentsID)
+		r.Post(options.BaseURL+"/components", wrapper.CreateComponent)
 	})
 
 	return r
 }
 
-type PostComponentsRequestObject struct {
-	Body *PostComponentsJSONRequestBody
+type CreateComponentRequestObject struct {
+	Body *CreateComponentJSONRequestBody
 }
 
-type PostComponentsResponseObject interface {
-	VisitPostComponentsResponse(w http.ResponseWriter) error
+type CreateComponentResponseObject interface {
+	VisitCreateComponentResponse(w http.ResponseWriter) error
 }
 
-type PostComponents201JSONResponse IDResponse
+type CreateComponent201JSONResponse ComponentCreateOutput
 
-func (response PostComponents201JSONResponse) VisitPostComponentsResponse(w http.ResponseWriter) error {
+func (response CreateComponent201JSONResponse) VisitCreateComponentResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(201)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type PostComponents400Response struct {
+type CreateComponent400Response struct {
 }
 
-func (response PostComponents400Response) VisitPostComponentsResponse(w http.ResponseWriter) error {
+func (response CreateComponent400Response) VisitCreateComponentResponse(w http.ResponseWriter) error {
 	w.WriteHeader(400)
-	return nil
-}
-
-type GetComponentsAllRequestObject struct {
-	Params GetComponentsAllParams
-}
-
-type GetComponentsAllResponseObject interface {
-	VisitGetComponentsAllResponse(w http.ResponseWriter) error
-}
-
-type GetComponentsAll200JSONResponse []Component
-
-func (response GetComponentsAll200JSONResponse) VisitGetComponentsAllResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type DeleteComponentsIDRequestObject struct {
-	ID string `json:"id"`
-}
-
-type DeleteComponentsIDResponseObject interface {
-	VisitDeleteComponentsIDResponse(w http.ResponseWriter) error
-}
-
-type DeleteComponentsID204Response struct {
-}
-
-func (response DeleteComponentsID204Response) VisitDeleteComponentsIDResponse(w http.ResponseWriter) error {
-	w.WriteHeader(204)
-	return nil
-}
-
-type DeleteComponentsID404Response struct {
-}
-
-func (response DeleteComponentsID404Response) VisitDeleteComponentsIDResponse(w http.ResponseWriter) error {
-	w.WriteHeader(404)
-	return nil
-}
-
-type GetComponentsIDRequestObject struct {
-	ID string `json:"id"`
-}
-
-type GetComponentsIDResponseObject interface {
-	VisitGetComponentsIDResponse(w http.ResponseWriter) error
-}
-
-type GetComponentsID200JSONResponse Component
-
-func (response GetComponentsID200JSONResponse) VisitGetComponentsIDResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetComponentsID404Response struct {
-}
-
-func (response GetComponentsID404Response) VisitGetComponentsIDResponse(w http.ResponseWriter) error {
-	w.WriteHeader(404)
-	return nil
-}
-
-type PatchComponentsIDRequestObject struct {
-	ID   string `json:"id"`
-	Body *PatchComponentsIDJSONRequestBody
-}
-
-type PatchComponentsIDResponseObject interface {
-	VisitPatchComponentsIDResponse(w http.ResponseWriter) error
-}
-
-type PatchComponentsID200JSONResponse Component
-
-func (response PatchComponentsID200JSONResponse) VisitPatchComponentsIDResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type PatchComponentsID404Response struct {
-}
-
-func (response PatchComponentsID404Response) VisitPatchComponentsIDResponse(w http.ResponseWriter) error {
-	w.WriteHeader(404)
 	return nil
 }
 
@@ -486,19 +218,7 @@ func (response PatchComponentsID404Response) VisitPatchComponentsIDResponse(w ht
 type StrictServerInterface interface {
 	// Создать компонент
 	// (POST /components)
-	PostComponents(ctx context.Context, request PostComponentsRequestObject) (PostComponentsResponseObject, error)
-	// Получить список всех компонентов (с фильтром по категории)
-	// (GET /components/all)
-	GetComponentsAll(ctx context.Context, request GetComponentsAllRequestObject) (GetComponentsAllResponseObject, error)
-	// Удалить компонент по id
-	// (DELETE /components/{id})
-	DeleteComponentsID(ctx context.Context, request DeleteComponentsIDRequestObject) (DeleteComponentsIDResponseObject, error)
-	// Получить компонент по id
-	// (GET /components/{id})
-	GetComponentsID(ctx context.Context, request GetComponentsIDRequestObject) (GetComponentsIDResponseObject, error)
-	// Частичное обновление компонента
-	// (PATCH /components/{id})
-	PatchComponentsID(ctx context.Context, request PatchComponentsIDRequestObject) (PatchComponentsIDResponseObject, error)
+	CreateComponent(ctx context.Context, request CreateComponentRequestObject) (CreateComponentResponseObject, error)
 }
 
 type StrictHandlerFunc = strictnethttp.StrictHTTPHandlerFunc
@@ -530,11 +250,11 @@ type strictHandler struct {
 	options     StrictHTTPServerOptions
 }
 
-// PostComponents operation middleware
-func (sh *strictHandler) PostComponents(w http.ResponseWriter, r *http.Request) {
-	var request PostComponentsRequestObject
+// CreateComponent operation middleware
+func (sh *strictHandler) CreateComponent(w http.ResponseWriter, r *http.Request) {
+	var request CreateComponentRequestObject
 
-	var body PostComponentsJSONRequestBody
+	var body CreateComponentJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
 		return
@@ -542,129 +262,18 @@ func (sh *strictHandler) PostComponents(w http.ResponseWriter, r *http.Request) 
 	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.PostComponents(ctx, request.(PostComponentsRequestObject))
+		return sh.ssi.CreateComponent(ctx, request.(CreateComponentRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "PostComponents")
+		handler = middleware(handler, "CreateComponent")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(PostComponentsResponseObject); ok {
-		if err := validResponse.VisitPostComponentsResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// GetComponentsAll operation middleware
-func (sh *strictHandler) GetComponentsAll(w http.ResponseWriter, r *http.Request, params GetComponentsAllParams) {
-	var request GetComponentsAllRequestObject
-
-	request.Params = params
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetComponentsAll(ctx, request.(GetComponentsAllRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetComponentsAll")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetComponentsAllResponseObject); ok {
-		if err := validResponse.VisitGetComponentsAllResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// DeleteComponentsID operation middleware
-func (sh *strictHandler) DeleteComponentsID(w http.ResponseWriter, r *http.Request, id string) {
-	var request DeleteComponentsIDRequestObject
-
-	request.ID = id
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.DeleteComponentsID(ctx, request.(DeleteComponentsIDRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "DeleteComponentsID")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(DeleteComponentsIDResponseObject); ok {
-		if err := validResponse.VisitDeleteComponentsIDResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// GetComponentsID operation middleware
-func (sh *strictHandler) GetComponentsID(w http.ResponseWriter, r *http.Request, id string) {
-	var request GetComponentsIDRequestObject
-
-	request.ID = id
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetComponentsID(ctx, request.(GetComponentsIDRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetComponentsID")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetComponentsIDResponseObject); ok {
-		if err := validResponse.VisitGetComponentsIDResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// PatchComponentsID operation middleware
-func (sh *strictHandler) PatchComponentsID(w http.ResponseWriter, r *http.Request, id string) {
-	var request PatchComponentsIDRequestObject
-
-	request.ID = id
-
-	var body PatchComponentsIDJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
-		return
-	}
-	request.Body = &body
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.PatchComponentsID(ctx, request.(PatchComponentsIDRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "PatchComponentsID")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(PatchComponentsIDResponseObject); ok {
-		if err := validResponse.VisitPatchComponentsIDResponse(w); err != nil {
+	} else if validResponse, ok := response.(CreateComponentResponseObject); ok {
+		if err := validResponse.VisitCreateComponentResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -1,14 +1,19 @@
 package http
 
 import (
-	"net/http"
-
 	"github.com/go-chi/chi/v5"
+	http_server "github.com/pc-configurator/components/gen/http/components_v1/server"
+	v1 "github.com/pc-configurator/components/internal/controller/http/v1"
 	"github.com/pc-configurator/components/internal/usecase"
 )
 
 func ComponentsRouter(r *chi.Mux, uc *usecase.UseCase) {
-	r.Get("/components", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello world"))
+	ver1 := v1.New(uc)
+
+	r.Route("/api", func(r chi.Router) {
+		r.Route("/v1", func(r chi.Router) {
+			mux := http_server.NewStrictHandler(ver1, []http_server.StrictMiddlewareFunc{})
+			http_server.HandlerFromMux(mux, r)
+		})
 	})
 }

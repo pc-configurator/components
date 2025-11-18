@@ -12,50 +12,23 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-
-	"github.com/oapi-codegen/runtime"
 )
 
-// Component defines model for Component.
-type Component struct {
-	Category    *string `json:"category,omitempty"`
-	Description *string `json:"description,omitempty"`
-	ID          *string `json:"id,omitempty"`
-	Name        *string `json:"name,omitempty"`
-	Price       *int    `json:"price,omitempty"`
+// ComponentCreateInput defines model for ComponentCreateInput.
+type ComponentCreateInput struct {
+	Category    string `json:"category"`
+	Description string `json:"description"`
+	Name        string `json:"name"`
+	Price       int    `json:"price"`
 }
 
-// ComponentCreate defines model for ComponentCreate.
-type ComponentCreate struct {
-	Category    *string `json:"category,omitempty"`
-	Description *string `json:"description,omitempty"`
-	Name        *string `json:"name,omitempty"`
-	Price       *int    `json:"price,omitempty"`
+// ComponentCreateOutput defines model for ComponentCreateOutput.
+type ComponentCreateOutput struct {
+	ID string `json:"id"`
 }
 
-// ComponentUpdate defines model for ComponentUpdate.
-type ComponentUpdate struct {
-	Category    *string `json:"category,omitempty"`
-	Description *string `json:"description,omitempty"`
-	Name        *string `json:"name,omitempty"`
-	Price       *int    `json:"price,omitempty"`
-}
-
-// IDResponse defines model for IdResponse.
-type IDResponse struct {
-	ID *string `json:"id,omitempty"`
-}
-
-// GetComponentsAllParams defines parameters for GetComponentsAll.
-type GetComponentsAllParams struct {
-	Category *string `form:"category,omitempty" json:"category,omitempty"`
-}
-
-// PostComponentsJSONRequestBody defines body for PostComponents for application/json ContentType.
-type PostComponentsJSONRequestBody = ComponentCreate
-
-// PatchComponentsIDJSONRequestBody defines body for PatchComponentsID for application/json ContentType.
-type PatchComponentsIDJSONRequestBody = ComponentUpdate
+// CreateComponentJSONRequestBody defines body for CreateComponent for application/json ContentType.
+type CreateComponentJSONRequestBody = ComponentCreateInput
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -130,28 +103,14 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
-	// PostComponentsWithBody request with any body
-	PostComponentsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateComponentWithBody request with any body
+	CreateComponentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	PostComponents(ctx context.Context, body PostComponentsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetComponentsAll request
-	GetComponentsAll(ctx context.Context, params *GetComponentsAllParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteComponentsID request
-	DeleteComponentsID(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetComponentsID request
-	GetComponentsID(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// PatchComponentsIDWithBody request with any body
-	PatchComponentsIDWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	PatchComponentsID(ctx context.Context, id string, body PatchComponentsIDJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateComponent(ctx context.Context, body CreateComponentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-func (c *Client) PostComponentsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostComponentsRequestWithBody(c.Server, contentType, body)
+func (c *Client) CreateComponentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateComponentRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -162,8 +121,8 @@ func (c *Client) PostComponentsWithBody(ctx context.Context, contentType string,
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostComponents(ctx context.Context, body PostComponentsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostComponentsRequest(c.Server, body)
+func (c *Client) CreateComponent(ctx context.Context, body CreateComponentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateComponentRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -174,79 +133,19 @@ func (c *Client) PostComponents(ctx context.Context, body PostComponentsJSONRequ
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetComponentsAll(ctx context.Context, params *GetComponentsAllParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetComponentsAllRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DeleteComponentsID(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteComponentsIDRequest(c.Server, id)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetComponentsID(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetComponentsIDRequest(c.Server, id)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PatchComponentsIDWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPatchComponentsIDRequestWithBody(c.Server, id, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PatchComponentsID(ctx context.Context, id string, body PatchComponentsIDJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPatchComponentsIDRequest(c.Server, id, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// NewPostComponentsRequest calls the generic PostComponents builder with application/json body
-func NewPostComponentsRequest(server string, body PostComponentsJSONRequestBody) (*http.Request, error) {
+// NewCreateComponentRequest calls the generic CreateComponent builder with application/json body
+func NewCreateComponentRequest(server string, body CreateComponentJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewPostComponentsRequestWithBody(server, "application/json", bodyReader)
+	return NewCreateComponentRequestWithBody(server, "application/json", bodyReader)
 }
 
-// NewPostComponentsRequestWithBody generates requests for PostComponents with any type of body
-func NewPostComponentsRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+// NewCreateComponentRequestWithBody generates requests for CreateComponent with any type of body
+func NewCreateComponentRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -265,170 +164,6 @@ func NewPostComponentsRequestWithBody(server string, contentType string, body io
 	}
 
 	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewGetComponentsAllRequest generates requests for GetComponentsAll
-func NewGetComponentsAllRequest(server string, params *GetComponentsAllParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/components/all")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.Category != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "category", runtime.ParamLocationQuery, *params.Category); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewDeleteComponentsIDRequest generates requests for DeleteComponentsID
-func NewDeleteComponentsIDRequest(server string, id string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/components/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetComponentsIDRequest generates requests for GetComponentsID
-func NewGetComponentsIDRequest(server string, id string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/components/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewPatchComponentsIDRequest calls the generic PatchComponentsID builder with application/json body
-func NewPatchComponentsIDRequest(server string, id string, body PatchComponentsIDJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewPatchComponentsIDRequestWithBody(server, id, "application/json", bodyReader)
-}
-
-// NewPatchComponentsIDRequestWithBody generates requests for PatchComponentsID with any type of body
-func NewPatchComponentsIDRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/components/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PATCH", queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -481,34 +216,20 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
-	// PostComponentsWithBodyWithResponse request with any body
-	PostComponentsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostComponentsResponse, error)
+	// CreateComponentWithBodyWithResponse request with any body
+	CreateComponentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateComponentResponse, error)
 
-	PostComponentsWithResponse(ctx context.Context, body PostComponentsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostComponentsResponse, error)
-
-	// GetComponentsAllWithResponse request
-	GetComponentsAllWithResponse(ctx context.Context, params *GetComponentsAllParams, reqEditors ...RequestEditorFn) (*GetComponentsAllResponse, error)
-
-	// DeleteComponentsIDWithResponse request
-	DeleteComponentsIDWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteComponentsIDResponse, error)
-
-	// GetComponentsIDWithResponse request
-	GetComponentsIDWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetComponentsIDResponse, error)
-
-	// PatchComponentsIDWithBodyWithResponse request with any body
-	PatchComponentsIDWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchComponentsIDResponse, error)
-
-	PatchComponentsIDWithResponse(ctx context.Context, id string, body PatchComponentsIDJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchComponentsIDResponse, error)
+	CreateComponentWithResponse(ctx context.Context, body CreateComponentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateComponentResponse, error)
 }
 
-type PostComponentsResponse struct {
+type CreateComponentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON201      *IDResponse
+	JSON201      *ComponentCreateOutput
 }
 
 // Status returns HTTPResponse.Status
-func (r PostComponentsResponse) Status() string {
+func (r CreateComponentResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -516,275 +237,50 @@ func (r PostComponentsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r PostComponentsResponse) StatusCode() int {
+func (r CreateComponentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetComponentsAllResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *[]Component
-}
-
-// Status returns HTTPResponse.Status
-func (r GetComponentsAllResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetComponentsAllResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type DeleteComponentsIDResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteComponentsIDResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteComponentsIDResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetComponentsIDResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Component
-}
-
-// Status returns HTTPResponse.Status
-func (r GetComponentsIDResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetComponentsIDResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type PatchComponentsIDResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Component
-}
-
-// Status returns HTTPResponse.Status
-func (r PatchComponentsIDResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r PatchComponentsIDResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// PostComponentsWithBodyWithResponse request with arbitrary body returning *PostComponentsResponse
-func (c *ClientWithResponses) PostComponentsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostComponentsResponse, error) {
-	rsp, err := c.PostComponentsWithBody(ctx, contentType, body, reqEditors...)
+// CreateComponentWithBodyWithResponse request with arbitrary body returning *CreateComponentResponse
+func (c *ClientWithResponses) CreateComponentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateComponentResponse, error) {
+	rsp, err := c.CreateComponentWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostComponentsResponse(rsp)
+	return ParseCreateComponentResponse(rsp)
 }
 
-func (c *ClientWithResponses) PostComponentsWithResponse(ctx context.Context, body PostComponentsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostComponentsResponse, error) {
-	rsp, err := c.PostComponents(ctx, body, reqEditors...)
+func (c *ClientWithResponses) CreateComponentWithResponse(ctx context.Context, body CreateComponentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateComponentResponse, error) {
+	rsp, err := c.CreateComponent(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostComponentsResponse(rsp)
+	return ParseCreateComponentResponse(rsp)
 }
 
-// GetComponentsAllWithResponse request returning *GetComponentsAllResponse
-func (c *ClientWithResponses) GetComponentsAllWithResponse(ctx context.Context, params *GetComponentsAllParams, reqEditors ...RequestEditorFn) (*GetComponentsAllResponse, error) {
-	rsp, err := c.GetComponentsAll(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetComponentsAllResponse(rsp)
-}
-
-// DeleteComponentsIDWithResponse request returning *DeleteComponentsIDResponse
-func (c *ClientWithResponses) DeleteComponentsIDWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteComponentsIDResponse, error) {
-	rsp, err := c.DeleteComponentsID(ctx, id, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteComponentsIDResponse(rsp)
-}
-
-// GetComponentsIDWithResponse request returning *GetComponentsIDResponse
-func (c *ClientWithResponses) GetComponentsIDWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetComponentsIDResponse, error) {
-	rsp, err := c.GetComponentsID(ctx, id, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetComponentsIDResponse(rsp)
-}
-
-// PatchComponentsIDWithBodyWithResponse request with arbitrary body returning *PatchComponentsIDResponse
-func (c *ClientWithResponses) PatchComponentsIDWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchComponentsIDResponse, error) {
-	rsp, err := c.PatchComponentsIDWithBody(ctx, id, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePatchComponentsIDResponse(rsp)
-}
-
-func (c *ClientWithResponses) PatchComponentsIDWithResponse(ctx context.Context, id string, body PatchComponentsIDJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchComponentsIDResponse, error) {
-	rsp, err := c.PatchComponentsID(ctx, id, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePatchComponentsIDResponse(rsp)
-}
-
-// ParsePostComponentsResponse parses an HTTP response from a PostComponentsWithResponse call
-func ParsePostComponentsResponse(rsp *http.Response) (*PostComponentsResponse, error) {
+// ParseCreateComponentResponse parses an HTTP response from a CreateComponentWithResponse call
+func ParseCreateComponentResponse(rsp *http.Response) (*CreateComponentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &PostComponentsResponse{
+	response := &CreateComponentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest IDResponse
+		var dest ComponentCreateOutput
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON201 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetComponentsAllResponse parses an HTTP response from a GetComponentsAllWithResponse call
-func ParseGetComponentsAllResponse(rsp *http.Response) (*GetComponentsAllResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetComponentsAllResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []Component
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteComponentsIDResponse parses an HTTP response from a DeleteComponentsIDWithResponse call
-func ParseDeleteComponentsIDResponse(rsp *http.Response) (*DeleteComponentsIDResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteComponentsIDResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	return response, nil
-}
-
-// ParseGetComponentsIDResponse parses an HTTP response from a GetComponentsIDWithResponse call
-func ParseGetComponentsIDResponse(rsp *http.Response) (*GetComponentsIDResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetComponentsIDResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Component
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParsePatchComponentsIDResponse parses an HTTP response from a PatchComponentsIDWithResponse call
-func ParsePatchComponentsIDResponse(rsp *http.Response) (*PatchComponentsIDResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &PatchComponentsIDResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Component
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
 
 	}
 
