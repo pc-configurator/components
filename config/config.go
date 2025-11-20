@@ -1,8 +1,6 @@
 package config
 
 import (
-	"fmt"
-
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pc-configurator/components/pkg/httpserver"
@@ -25,12 +23,12 @@ func New() (Config, error) {
 
 	err := godotenv.Load(".env")
 	if err != nil {
-		return config, fmt.Errorf("godotenv.Load: %w", err)
+		return config, logger.NewErrorWithPath("godotenv.Load", err)
 	}
 
 	err = envconfig.Process("", &config)
 	if err != nil {
-		return config, fmt.Errorf("envconfig.Process: %w", err)
+		return config, logger.NewErrorWithPath("envconfig.Process", err)
 	}
 
 	return config, nil

@@ -1,17 +1,25 @@
 package dto
 
-import "errors"
+import (
+	"github.com/pc-configurator/components/pkg/validation"
+)
 
 type CreateComponentInput struct {
-	Name        string
-	Price       int
-	Category    string
-	Description string
+	Name        string `json:"name"`
+	Price       int    `json:"price"`
+	Category    string `json:"category"`
+	Description string `json:"description"`
 }
 
 func (input CreateComponentInput) Validate() error {
-	if len([]rune(input.Name)) < 4 {
-		return errors.New("длина должна быть больше 3")
+	errors := validation.ErrorFields{}
+
+	if !validation.MinString(input.Name, 4) {
+		errors["name"] = "Name must be at least 4 characters long"
+	}
+
+	if len(errors) > 0 {
+		return errors
 	}
 
 	return nil

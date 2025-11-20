@@ -2,9 +2,9 @@ package usecase
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pc-configurator/components/internal/dto"
+	"github.com/pc-configurator/components/pkg/logger"
 )
 
 func (u *UseCase) CreateComponent(ctx context.Context, input dto.CreateComponentInput) (dto.CreateComponentOutput, error) {
@@ -12,10 +12,13 @@ func (u *UseCase) CreateComponent(ctx context.Context, input dto.CreateComponent
 
 	err := input.Validate()
 	if err != nil {
-		return output, fmt.Errorf("input.Validate: %w", err)
+		return output, logger.NewErrorWithPath("input.Validate", err)
 	}
 
 	component, err := u.postgres.CreateComponent(ctx, input)
+	if err != nil {
+		return output, logger.NewErrorWithPath("u.postgres.CreateComponent", err)
+	}
 
 	output = dto.CreateComponentOutput{
 		ID: component.ID,

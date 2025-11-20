@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -41,10 +42,14 @@ func Info(msg string) {
 	log.Info().Msg(msg)
 }
 
-func Error(err error, msg string) {
-	log.Error().Err(err).Msg(msg)
+func Error(err error) {
+	log.Error().Err(err).Send()
 }
 
 func Fatal(err error, msg string) {
 	log.Fatal().Err(err).Msg(msg)
+}
+
+func NewErrorWithPath(path string, err error) error {
+	return fmt.Errorf("%s: %w", path, err)
 }

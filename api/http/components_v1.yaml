@@ -22,14 +22,24 @@ paths:
             schema:
               $ref: "#/components/schemas/ComponentCreateInput"
       responses:
-        "201":
+        201:
           description: Создано
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ComponentCreateOutput"
-        "400":
-          description: Неверный запрос
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Internal Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 #  /components/{id}:
 #    get:
 #      summary: Получить компонент по id
@@ -108,7 +118,7 @@ components:
       type: object
       properties:
         id:
-          type: string
+          type: integer
         name:
           type: string
         price:
@@ -139,7 +149,7 @@ components:
         - id
       properties:
         id:
-          type: string
+          type: integer
     ComponentUpdate:
       type: object
       properties:
@@ -151,3 +161,20 @@ components:
           type: string
         description:
           type: string
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          required:
+            - code
+          type: object
+          description: Error message
+          properties:
+            code:
+              type: string
+            invalidFields:
+              type: object
+              additionalProperties:
+                type: string

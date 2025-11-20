@@ -19,6 +19,6 @@ func main() {
 	ctx := context.Background()
 	err = app.Run(ctx, cfg)
 	if err != nil {
-		logger.Error(err, "app.Run")
+		logger.Error(err)
 	}
 }

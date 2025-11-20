@@ -24,7 +24,16 @@ type ComponentCreateInput struct {
 
 // ComponentCreateOutput defines model for ComponentCreateOutput.
 type ComponentCreateOutput struct {
-	ID string `json:"id"`
+	ID int `json:"id"`
+}
+
+// ErrorResponse defines model for ErrorResponse.
+type ErrorResponse struct {
+	// Error Error message
+	Error struct {
+		Code          string             `json:"code"`
+		InvalidFields *map[string]string `json:"invalidFields,omitempty"`
+	} `json:"error"`
 }
 
 // CreateComponentJSONRequestBody defines body for CreateComponent for application/json ContentType.
@@ -226,6 +235,8 @@ type CreateComponentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON201      *ComponentCreateOutput
+	JSON400      *ErrorResponse
+	JSON500      *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -281,6 +292,20 @@ func ParseCreateComponentResponse(rsp *http.Response) (*CreateComponentResponse,
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
 
 	}
 

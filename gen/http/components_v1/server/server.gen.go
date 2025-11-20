@@ -23,7 +23,16 @@ type ComponentCreateInput struct {
 
 // ComponentCreateOutput defines model for ComponentCreateOutput.
 type ComponentCreateOutput struct {
-	ID string `json:"id"`
+	ID int `json:"id"`
+}
+
+// ErrorResponse defines model for ErrorResponse.
+type ErrorResponse struct {
+	// Error Error message
+	Error struct {
+		Code          string             `json:"code"`
+		InvalidFields *map[string]string `json:"invalidFields,omitempty"`
+	} `json:"error"`
 }
 
 // CreateComponentJSONRequestBody defines body for CreateComponent for application/json ContentType.
@@ -206,12 +215,22 @@ func (response CreateComponent201JSONResponse) VisitCreateComponentResponse(w ht
 	return json.NewEncoder(w).Encode(response)
 }
 
-type CreateComponent400Response struct {
+type CreateComponent400JSONResponse ErrorResponse
+
+func (response CreateComponent400JSONResponse) VisitCreateComponentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response CreateComponent400Response) VisitCreateComponentResponse(w http.ResponseWriter) error {
-	w.WriteHeader(400)
-	return nil
+type CreateComponent500JSONResponse ErrorResponse
+
+func (response CreateComponent500JSONResponse) VisitCreateComponentResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 // StrictServerInterface represents all server handlers.
