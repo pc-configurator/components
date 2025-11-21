@@ -2,12 +2,15 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/pc-configurator/components/config"
-	"github.com/pc-configurator/components/internal/adapter/postgres"
+	"github.com/pc-configurator/components/pkg/postgres"
+
+	"github.com/pc-configurator/components/internal/adapter/postgres_entities"
 	"github.com/pc-configurator/components/internal/controller/http"
 	"github.com/pc-configurator/components/internal/usecase"
 	"github.com/pc-configurator/components/pkg/httpserver"
@@ -16,21 +19,31 @@ import (
 )
 
 func Run(ctx context.Context, c config.Config) error {
+	// Postgres
+	pgpool, err := postgres.New(ctx, c.Postgres)
+	if err != nil {
+		return fmt.Errorf("pgx.New: %w", err)
+	}
+
+	// UseCase
+	uc := usecase.New(postgres_entities.New())
+
+	// HTTP
 	r := router.New()
-	uc := usecase.New(postgres.New())
-	http.ComponentsRouter(r, uc)
+	http.ComponentRouter(r, uc)
 
 	httpServer := httpserver.New(r, c.HTTP)
 
-	logger.Info("App started!")
+	logger.Info("App started")
 
 	<-listenCloseSignals()
 
 	logger.Info("App got signal to stop")
 
 	httpServer.Close()
+	pgpool.Close()
 
-	logger.Info("App stopped!")
+	logger.Info("App stopped")
 
 	return nil
 }

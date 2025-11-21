@@ -17,6 +17,7 @@ func main() {
 	logger.Init(cfg.Logger)
 
 	ctx := context.Background()
+
 	err = app.Run(ctx, cfg)
 	if err != nil {
 		logger.Error(err)

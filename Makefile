@@ -1,6 +1,9 @@
 run:
 	go run ./cmd/app
 
+up:
+	docker compose up --build --force-recreate
+
 generate:
 	go generate ./...
 

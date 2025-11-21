@@ -15,7 +15,7 @@ func (u *UseCase) CreateComponent(ctx context.Context, input dto.CreateComponent
 		return output, logger.NewErrorWithPath("input.Validate", err)
 	}
 
-	component, err := u.postgres.CreateComponent(ctx, input)
+	component, err := u.entitiesStorage.CreateComponent(ctx, input)
 	if err != nil {
 		return output, logger.NewErrorWithPath("u.postgres.CreateComponent", err)
 	}

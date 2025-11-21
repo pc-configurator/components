@@ -5,6 +5,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pc-configurator/components/pkg/httpserver"
 	"github.com/pc-configurator/components/pkg/logger"
+	"github.com/pc-configurator/components/pkg/postgres"
 )
 
 type App struct {
@@ -13,9 +14,10 @@ type App struct {
 }
 
 type Config struct {
-	App    App
-	Logger logger.Config
-	HTTP   httpserver.Config
+	App      App
+	Logger   logger.Config
+	HTTP     httpserver.Config
+	Postgres postgres.Config
 }
 
 func New() (Config, error) {

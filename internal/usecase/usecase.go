@@ -7,14 +7,14 @@ import (
 	"github.com/pc-configurator/components/internal/dto"
 )
 
-type Postgres interface {
+type EntitiesStorage interface {
 	CreateComponent(ctx context.Context, input dto.CreateComponentInput) (domain.Component, error)
 }
 
 type UseCase struct {
-	postgres Postgres
+	entitiesStorage EntitiesStorage
 }
 
-func New(p Postgres) *UseCase {
-	return &UseCase{postgres: p}
+func New(e EntitiesStorage) *UseCase {
+	return &UseCase{entitiesStorage: e}
 }

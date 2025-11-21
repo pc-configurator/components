@@ -1,4 +1,4 @@
-package postgres
+package postgres_entities
 
 import (
 	"context"
@@ -9,6 +9,6 @@ import (
 	"github.com/pc-configurator/components/pkg/logger"
 )
 
-func (p *Postgres) CreateComponent(ctx context.Context, input dto.CreateComponentInput) (domain.Component, error) {
+func (p *PostgresEntities) CreateComponent(ctx context.Context, input dto.CreateComponentInput) (domain.Component, error) {
 	return domain.Component{}, logger.NewErrorWithPath("penis", errors.New("not implemented"))
 }

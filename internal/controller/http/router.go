@@ -8,7 +8,7 @@ import (
 	"github.com/pc-configurator/components/pkg/logger"
 )
 
-func ComponentsRouter(r *chi.Mux, uc *usecase.UseCase) {
+func ComponentRouter(r *chi.Mux, uc *usecase.UseCase) {
 	ver1 := v1.New(uc)
 
 	r.Route("/api", func(r chi.Router) {
