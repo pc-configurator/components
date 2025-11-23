@@ -42,8 +42,8 @@ func Info(msg string) {
 	log.Info().Msg(msg)
 }
 
-func Error(err error) {
-	log.Error().Err(err).Send()
+func Error(err error, msg string) {
+	log.Error().Err(err).Msg(msg)
 }
 
 func Fatal(err error, msg string) {

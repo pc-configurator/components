@@ -9,6 +9,7 @@ import (
 
 	"github.com/pc-configurator/components/config"
 	"github.com/pc-configurator/components/pkg/postgres"
+	"github.com/pc-configurator/components/pkg/redis"
 
 	"github.com/pc-configurator/components/internal/adapter/postgres_entities"
 	"github.com/pc-configurator/components/internal/controller/http"
@@ -19,6 +20,12 @@ import (
 )
 
 func Run(ctx context.Context, c config.Config) error {
+	// Redis
+	redisClient, err := redis.New(c.Redis, ctx)
+	if err != nil {
+		return fmt.Errorf("redis.New: %w", err)
+	}
+
 	// Postgres
 	pgpool, err := postgres.New(ctx, c.Postgres)
 	if err != nil {
@@ -26,16 +33,16 @@ func Run(ctx context.Context, c config.Config) error {
 	}
 
 	// UseCase
-	uc := usecase.New(postgres_entities.New(pgpool))
+	uc := usecase.New(postgres_entities.New(pgpool), redisClient)
 
 	// HTTP
 	r := router.New()
 	http.ComponentRouter(r, uc)
-
 	httpServer := httpserver.New(r, c.HTTP)
 
 	logger.Info("App started")
 
+	// Shutdown
 	<-listenCloseSignals()
 
 	logger.Info("App got signal to stop")

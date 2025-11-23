@@ -45,5 +45,5 @@ func New(ctx context.Context, c Config) (*Pool, error) {
 func (p *Pool) Close() {
 	p.Pool.Close()
 
-	logger.Info("Postgres closed")
+	logger.Info("postgres: closed")
 }

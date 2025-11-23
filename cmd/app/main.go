@@ -20,6 +20,6 @@ func main() {
 
 	err = app.Run(ctx, cfg)
 	if err != nil {
-		logger.Error(err)
+		logger.Error(err, "app.Run")
 	}
 }

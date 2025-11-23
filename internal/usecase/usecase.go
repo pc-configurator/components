@@ -7,6 +7,9 @@ import (
 	"github.com/pc-configurator/components/internal/dto"
 )
 
+type CacheStorage interface {
+}
+
 type EntitiesStorage interface {
 	CreateComponent(ctx context.Context, input dto.CreateComponentInput) (domain.Component, error)
 	CreateCategory(ctx context.Context, input dto.CreateCategoryInput) (domain.Category, error)
@@ -15,8 +18,9 @@ type EntitiesStorage interface {
 
 type UseCase struct {
 	entitiesStorage EntitiesStorage
+	cacheStorage    CacheStorage
 }
 
-func New(e EntitiesStorage) *UseCase {
-	return &UseCase{entitiesStorage: e}
+func New(e EntitiesStorage, c CacheStorage) *UseCase {
+	return &UseCase{entitiesStorage: e, cacheStorage: c}
 }

@@ -40,7 +40,7 @@ func New(handler http.Handler, c Config) *Server {
 func (s *Server) start() {
 	err := s.server.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		logger.Error(err)
+		logger.Error(err, "httpserver.start")
 	}
 }
 
@@ -50,8 +50,8 @@ func (s *Server) Close() {
 
 	err := s.server.Shutdown(ctx)
 	if err != nil {
-		logger.Error(err)
+		logger.Error(err, "httpserver.Shutdown")
 	}
 
-	logger.Info("http server: closed")
+	logger.Info("httpserver: closed")
 }

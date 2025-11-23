@@ -6,6 +6,7 @@ import (
 	"github.com/pc-configurator/components/pkg/httpserver"
 	"github.com/pc-configurator/components/pkg/logger"
 	"github.com/pc-configurator/components/pkg/postgres"
+	"github.com/pc-configurator/components/pkg/redis"
 )
 
 type App struct {
@@ -18,6 +19,7 @@ type Config struct {
 	Logger   logger.Config
 	HTTP     httpserver.Config
 	Postgres postgres.Config
+	Redis    redis.Config
 }
 
 func New() (Config, error) {
