@@ -23,16 +23,20 @@ func (h Handlers) CreateComponent(ctx context.Context, request http_server.Creat
 	if err != nil {
 		logger.SetCtxError(ctx, err)
 
+		if errors.Is(err, domain.ErrComponentNameExists) {
+			return http_server.CreateComponent400JSONResponse{Error: domain.NewErrorWithDetails(domain.ErrComponentNameExists)}, nil
+		}
+
+		if errors.Is(err, domain.ErrCategoryNotFound) {
+			return http_server.CreateComponent400JSONResponse{Error: domain.NewErrorWithDetails(domain.ErrCategoryNotFound)}, nil
+		}
+
 		var errorFields validation.ErrorFields
 		if errors.As(err, &errorFields) {
 			return http_server.CreateComponent400JSONResponse{Error: domain.NewValidationError(errorFields)}, nil
 		}
 
-		if errors.Is(err, domain.ErrCategoryNotFound) {
-			return http_server.CreateComponent400JSONResponse{Error: domain.NewCategoryNotFoundError()}, nil
-		}
-
-		return http_server.CreateComponent500JSONResponse{Error: domain.NewInternalError()}, nil
+		return http_server.CreateComponent500JSONResponse{Error: domain.NewErrorWithDetails(domain.ErrInternal)}, nil
 	}
 
 	return http_server.CreateComponent201JSONResponse{ID: res.ID}, nil

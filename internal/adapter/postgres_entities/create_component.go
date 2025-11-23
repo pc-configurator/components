@@ -2,7 +2,6 @@ package postgres_entities
 
 import (
 	"context"
-	"errors"
 
 	"github.com/pc-configurator/components/internal/domain"
 	"github.com/pc-configurator/components/internal/dto"
@@ -23,12 +22,16 @@ func (p *PostgresEntities) CreateComponent(ctx context.Context, input dto.Create
 	var component domain.Component
 	err := p.Pool.QueryRow(ctx, sql, args...).Scan(&component.ID, &component.Name, &component.Price, &component.CategoryID, &component.Description)
 	if err != nil {
-		if postgres.IsRelationDoesNotExist(err, ComponentCategoryForeignKey) {
+		if postgres.IsConstraint(err, ComponentNameUniqueKey) {
+			return domain.Component{}, domain.ErrComponentNameExists
+		}
+
+		if postgres.IsConstraint(err, ComponentCategoryForeignKey) {
 			return domain.Component{}, domain.ErrCategoryNotFound
 		}
 
 		return component, logger.NewErrorWithPath("p.Pool.Exec", err)
 	}
 
-	return component, logger.NewErrorWithPath("penis", errors.New("not implemented"))
+	return component, nil
 }

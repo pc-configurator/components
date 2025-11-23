@@ -9,7 +9,7 @@ servers:
     description: Пример сервера
 
 paths:
-  /components:
+  /component:
     post:
       tags:
         - Component
@@ -28,6 +28,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ComponentCreateOutput"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Internal Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /category:
+    post:
+      tags:
+        - Category
+      summary: Создать категорию
+      operationId: createCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryCreateInput"
+      responses:
+        201:
+          description: Создано
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryCreateOutput"
         400:
           description: Bad Request
           content:
@@ -164,6 +195,21 @@ components:
         description:
           type: string
         categoryId:
+          type: integer
+    CategoryCreateInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          nullable: true
+    CategoryCreateOutput:
+      type: object
+      required:
+        - id
+      properties:
+        id:
           type: integer
     ErrorResponse:
       type: object

@@ -5,10 +5,10 @@ import (
 )
 
 type CreateComponentInput struct {
-	Name        *string `json:"name"`
-	Price       *int    `json:"price"`
-	Description *string `json:"description"`
-	CategoryID  *int    `json:"categoryId"`
+	Name        *string
+	Price       *int
+	Description *string
+	CategoryID  *int
 }
 
 func (input CreateComponentInput) Validate() error {

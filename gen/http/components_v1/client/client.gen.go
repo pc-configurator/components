@@ -14,6 +14,16 @@ import (
 	"strings"
 )
 
+// CategoryCreateInput defines model for CategoryCreateInput.
+type CategoryCreateInput struct {
+	Name *string `json:"name"`
+}
+
+// CategoryCreateOutput defines model for CategoryCreateOutput.
+type CategoryCreateOutput struct {
+	ID int `json:"id"`
+}
+
 // ComponentCreateInput defines model for ComponentCreateInput.
 type ComponentCreateInput struct {
 	CategoryID  *int    `json:"categoryId"`
@@ -35,6 +45,9 @@ type ErrorResponse struct {
 		InvalidFields *map[string]string `json:"invalidFields,omitempty"`
 	} `json:"error"`
 }
+
+// CreateCategoryJSONRequestBody defines body for CreateCategory for application/json ContentType.
+type CreateCategoryJSONRequestBody = CategoryCreateInput
 
 // CreateComponentJSONRequestBody defines body for CreateComponent for application/json ContentType.
 type CreateComponentJSONRequestBody = ComponentCreateInput
@@ -112,10 +125,39 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// CreateCategoryWithBody request with any body
+	CreateCategoryWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateCategory(ctx context.Context, body CreateCategoryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// CreateComponentWithBody request with any body
 	CreateComponentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	CreateComponent(ctx context.Context, body CreateComponentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+func (c *Client) CreateCategoryWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateCategoryRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateCategory(ctx context.Context, body CreateCategoryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateCategoryRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 func (c *Client) CreateComponentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -142,6 +184,46 @@ func (c *Client) CreateComponent(ctx context.Context, body CreateComponentJSONRe
 	return c.Client.Do(req)
 }
 
+// NewCreateCategoryRequest calls the generic CreateCategory builder with application/json body
+func NewCreateCategoryRequest(server string, body CreateCategoryJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateCategoryRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateCategoryRequestWithBody generates requests for CreateCategory with any type of body
+func NewCreateCategoryRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/category")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewCreateComponentRequest calls the generic CreateComponent builder with application/json body
 func NewCreateComponentRequest(server string, body CreateComponentJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -162,7 +244,7 @@ func NewCreateComponentRequestWithBody(server string, contentType string, body i
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/components")
+	operationPath := fmt.Sprintf("/component")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -225,10 +307,39 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// CreateCategoryWithBodyWithResponse request with any body
+	CreateCategoryWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCategoryResponse, error)
+
+	CreateCategoryWithResponse(ctx context.Context, body CreateCategoryJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCategoryResponse, error)
+
 	// CreateComponentWithBodyWithResponse request with any body
 	CreateComponentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateComponentResponse, error)
 
 	CreateComponentWithResponse(ctx context.Context, body CreateComponentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateComponentResponse, error)
+}
+
+type CreateCategoryResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *CategoryCreateOutput
+	JSON400      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateCategoryResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateCategoryResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
 }
 
 type CreateComponentResponse struct {
@@ -255,6 +366,23 @@ func (r CreateComponentResponse) StatusCode() int {
 	return 0
 }
 
+// CreateCategoryWithBodyWithResponse request with arbitrary body returning *CreateCategoryResponse
+func (c *ClientWithResponses) CreateCategoryWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCategoryResponse, error) {
+	rsp, err := c.CreateCategoryWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateCategoryResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateCategoryWithResponse(ctx context.Context, body CreateCategoryJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCategoryResponse, error) {
+	rsp, err := c.CreateCategory(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateCategoryResponse(rsp)
+}
+
 // CreateComponentWithBodyWithResponse request with arbitrary body returning *CreateComponentResponse
 func (c *ClientWithResponses) CreateComponentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateComponentResponse, error) {
 	rsp, err := c.CreateComponentWithBody(ctx, contentType, body, reqEditors...)
@@ -270,6 +398,46 @@ func (c *ClientWithResponses) CreateComponentWithResponse(ctx context.Context, b
 		return nil, err
 	}
 	return ParseCreateComponentResponse(rsp)
+}
+
+// ParseCreateCategoryResponse parses an HTTP response from a CreateCategoryWithResponse call
+func ParseCreateCategoryResponse(rsp *http.Response) (*CreateCategoryResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateCategoryResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest CategoryCreateOutput
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
 }
 
 // ParseCreateComponentResponse parses an HTTP response from a CreateComponentWithResponse call

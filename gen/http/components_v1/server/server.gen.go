@@ -13,6 +13,16 @@ import (
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 )
 
+// CategoryCreateInput defines model for CategoryCreateInput.
+type CategoryCreateInput struct {
+	Name *string `json:"name"`
+}
+
+// CategoryCreateOutput defines model for CategoryCreateOutput.
+type CategoryCreateOutput struct {
+	ID int `json:"id"`
+}
+
 // ComponentCreateInput defines model for ComponentCreateInput.
 type ComponentCreateInput struct {
 	CategoryID  *int    `json:"categoryId"`
@@ -35,13 +45,19 @@ type ErrorResponse struct {
 	} `json:"error"`
 }
 
+// CreateCategoryJSONRequestBody defines body for CreateCategory for application/json ContentType.
+type CreateCategoryJSONRequestBody = CategoryCreateInput
+
 // CreateComponentJSONRequestBody defines body for CreateComponent for application/json ContentType.
 type CreateComponentJSONRequestBody = ComponentCreateInput
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Создать категорию
+	// (POST /category)
+	CreateCategory(w http.ResponseWriter, r *http.Request)
 	// Создать компонент
-	// (POST /components)
+	// (POST /component)
 	CreateComponent(w http.ResponseWriter, r *http.Request)
 }
 
@@ -49,8 +65,14 @@ type ServerInterface interface {
 
 type Unimplemented struct{}
 
+// Создать категорию
+// (POST /category)
+func (_ Unimplemented) CreateCategory(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Создать компонент
-// (POST /components)
+// (POST /component)
 func (_ Unimplemented) CreateComponent(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
@@ -63,6 +85,20 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// CreateCategory operation middleware
+func (siw *ServerInterfaceWrapper) CreateCategory(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateCategory(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // CreateComponent operation middleware
 func (siw *ServerInterfaceWrapper) CreateComponent(w http.ResponseWriter, r *http.Request) {
@@ -192,10 +228,48 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/components", wrapper.CreateComponent)
+		r.Post(options.BaseURL+"/category", wrapper.CreateCategory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/component", wrapper.CreateComponent)
 	})
 
 	return r
+}
+
+type CreateCategoryRequestObject struct {
+	Body *CreateCategoryJSONRequestBody
+}
+
+type CreateCategoryResponseObject interface {
+	VisitCreateCategoryResponse(w http.ResponseWriter) error
+}
+
+type CreateCategory201JSONResponse CategoryCreateOutput
+
+func (response CreateCategory201JSONResponse) VisitCreateCategoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateCategory400JSONResponse ErrorResponse
+
+func (response CreateCategory400JSONResponse) VisitCreateCategoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateCategory500JSONResponse ErrorResponse
+
+func (response CreateCategory500JSONResponse) VisitCreateCategoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type CreateComponentRequestObject struct {
@@ -235,8 +309,11 @@ func (response CreateComponent500JSONResponse) VisitCreateComponentResponse(w ht
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// Создать категорию
+	// (POST /category)
+	CreateCategory(ctx context.Context, request CreateCategoryRequestObject) (CreateCategoryResponseObject, error)
 	// Создать компонент
-	// (POST /components)
+	// (POST /component)
 	CreateComponent(ctx context.Context, request CreateComponentRequestObject) (CreateComponentResponseObject, error)
 }
 
@@ -267,6 +344,37 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// CreateCategory operation middleware
+func (sh *strictHandler) CreateCategory(w http.ResponseWriter, r *http.Request) {
+	var request CreateCategoryRequestObject
+
+	var body CreateCategoryJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateCategory(ctx, request.(CreateCategoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateCategory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateCategoryResponseObject); ok {
+		if err := validResponse.VisitCreateCategoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // CreateComponent operation middleware
