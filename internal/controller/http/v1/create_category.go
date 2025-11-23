@@ -32,5 +32,5 @@ func (h Handlers) CreateCategory(ctx context.Context, request http_server.Create
 		return http_server.CreateCategory500JSONResponse{Error: domain.NewErrorWithDetails(domain.ErrInternal)}, nil
 	}
 
-	return http_server.CreateCategory201JSONResponse{ID: res.ID}, nil
+	return http_server.CreateCategory201JSONResponse{ID: &res.ID}, nil
 }

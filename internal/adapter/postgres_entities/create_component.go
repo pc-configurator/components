@@ -30,7 +30,7 @@ func (p *PostgresEntities) CreateComponent(ctx context.Context, input dto.Create
 			return domain.Component{}, domain.ErrCategoryNotFound
 		}
 
-		return component, logger.NewErrorWithPath("p.Pool.Exec", err)
+		return domain.Component{}, logger.NewErrorWithPath("p.Pool.Exec", err)
 	}
 
 	return component, nil

@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/oapi-codegen/runtime"
 )
 
 // CategoryCreateInput defines model for CategoryCreateInput.
@@ -21,7 +23,16 @@ type CategoryCreateInput struct {
 
 // CategoryCreateOutput defines model for CategoryCreateOutput.
 type CategoryCreateOutput struct {
-	ID int `json:"id"`
+	ID *int `json:"id,omitempty"`
+}
+
+// Component defines model for Component.
+type Component struct {
+	CategoryID  *int    `json:"categoryId,omitempty"`
+	Description *string `json:"description,omitempty"`
+	ID          *int    `json:"id,omitempty"`
+	Name        *string `json:"name,omitempty"`
+	Price       *int    `json:"price,omitempty"`
 }
 
 // ComponentCreateInput defines model for ComponentCreateInput.
@@ -34,7 +45,7 @@ type ComponentCreateInput struct {
 
 // ComponentCreateOutput defines model for ComponentCreateOutput.
 type ComponentCreateOutput struct {
-	ID int `json:"id"`
+	ID *int `json:"id,omitempty"`
 }
 
 // ErrorResponse defines model for ErrorResponse.
@@ -134,6 +145,9 @@ type ClientInterface interface {
 	CreateComponentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	CreateComponent(ctx context.Context, body CreateComponentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetComponentID request
+	GetComponentID(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) CreateCategoryWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -174,6 +188,18 @@ func (c *Client) CreateComponentWithBody(ctx context.Context, contentType string
 
 func (c *Client) CreateComponent(ctx context.Context, body CreateComponentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateComponentRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetComponentID(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetComponentIDRequest(c.Server, id)
 	if err != nil {
 		return nil, err
 	}
@@ -264,6 +290,40 @@ func NewCreateComponentRequestWithBody(server string, contentType string, body i
 	return req, nil
 }
 
+// NewGetComponentIDRequest generates requests for GetComponentID
+func NewGetComponentIDRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/component/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -316,6 +376,9 @@ type ClientWithResponsesInterface interface {
 	CreateComponentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateComponentResponse, error)
 
 	CreateComponentWithResponse(ctx context.Context, body CreateComponentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateComponentResponse, error)
+
+	// GetComponentIDWithResponse request
+	GetComponentIDWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetComponentIDResponse, error)
 }
 
 type CreateCategoryResponse struct {
@@ -366,6 +429,31 @@ func (r CreateComponentResponse) StatusCode() int {
 	return 0
 }
 
+type GetComponentIDResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Component
+	JSON400      *ErrorResponse
+	JSON404      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetComponentIDResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetComponentIDResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // CreateCategoryWithBodyWithResponse request with arbitrary body returning *CreateCategoryResponse
 func (c *ClientWithResponses) CreateCategoryWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCategoryResponse, error) {
 	rsp, err := c.CreateCategoryWithBody(ctx, contentType, body, reqEditors...)
@@ -398,6 +486,15 @@ func (c *ClientWithResponses) CreateComponentWithResponse(ctx context.Context, b
 		return nil, err
 	}
 	return ParseCreateComponentResponse(rsp)
+}
+
+// GetComponentIDWithResponse request returning *GetComponentIDResponse
+func (c *ClientWithResponses) GetComponentIDWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetComponentIDResponse, error) {
+	rsp, err := c.GetComponentID(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetComponentIDResponse(rsp)
 }
 
 // ParseCreateCategoryResponse parses an HTTP response from a CreateCategoryWithResponse call
@@ -467,6 +564,53 @@ func ParseCreateComponentResponse(rsp *http.Response) (*CreateComponentResponse,
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetComponentIDResponse parses an HTTP response from a GetComponentIDWithResponse call
+func ParseGetComponentIDResponse(rsp *http.Response) (*GetComponentIDResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetComponentIDResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Component
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest ErrorResponse

@@ -10,6 +10,7 @@ var (
 	ErrCategoryNotFound    = errors.New("category_not_found")
 	ErrComponentNameExists = errors.New("component_name_exists")
 	ErrCategoryNameExists  = errors.New("category_name_exists")
+	ErrComponentNotFound   = errors.New("component_not_found")
 )
 
 type ErrWithDetails struct {

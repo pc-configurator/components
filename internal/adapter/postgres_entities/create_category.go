@@ -23,7 +23,7 @@ func (p *PostgresEntities) CreateCategory(ctx context.Context, input dto.CreateC
 			return component, domain.ErrCategoryNameExists
 		}
 
-		return component, logger.NewErrorWithPath("p.Pool.Exec", err)
+		return domain.Category{}, logger.NewErrorWithPath("p.Pool.Exec", err)
 	}
 
 	return component, nil

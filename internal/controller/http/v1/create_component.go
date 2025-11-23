@@ -39,5 +39,5 @@ func (h Handlers) CreateComponent(ctx context.Context, request http_server.Creat
 		return http_server.CreateComponent500JSONResponse{Error: domain.NewErrorWithDetails(domain.ErrInternal)}, nil
 	}
 
-	return http_server.CreateComponent201JSONResponse{ID: res.ID}, nil
+	return http_server.CreateComponent201JSONResponse{ID: &res.ID}, nil
 }

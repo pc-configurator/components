@@ -40,6 +40,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /component/{id}:
+    get:
+      summary: Получить компонент по id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            nullable: true
+      responses:
+        200:
+          description: Компонент найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Component"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Internal Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /category:
     post:
       tags:
@@ -71,25 +106,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-#  /components/{id}:
-#    get:
-#      summary: Получить компонент по id
-#      parameters:
-#        - name: id
-#          in: path
-#          required: true
-#          schema:
-#            type: string
-#      responses:
-#        "200":
-#          description: Компонент найден
-#          content:
-#            application/json:
-#              schema:
-#                $ref: "#/components/schemas/Component"
-#        "404":
-#          description: Не найдено
-#
 #    patch:
 #      summary: Частичное обновление компонента
 #      parameters:
@@ -180,8 +196,6 @@ components:
           nullable: true
     ComponentCreateOutput:
       type: object
-      required:
-        - id
       properties:
         id:
           type: integer
@@ -206,8 +220,6 @@ components:
           nullable: true
     CategoryCreateOutput:
       type: object
-      required:
-        - id
       properties:
         id:
           type: integer

@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 )
 
@@ -20,7 +21,16 @@ type CategoryCreateInput struct {
 
 // CategoryCreateOutput defines model for CategoryCreateOutput.
 type CategoryCreateOutput struct {
-	ID int `json:"id"`
+	ID *int `json:"id,omitempty"`
+}
+
+// Component defines model for Component.
+type Component struct {
+	CategoryID  *int    `json:"categoryId,omitempty"`
+	Description *string `json:"description,omitempty"`
+	ID          *int    `json:"id,omitempty"`
+	Name        *string `json:"name,omitempty"`
+	Price       *int    `json:"price,omitempty"`
 }
 
 // ComponentCreateInput defines model for ComponentCreateInput.
@@ -33,7 +43,7 @@ type ComponentCreateInput struct {
 
 // ComponentCreateOutput defines model for ComponentCreateOutput.
 type ComponentCreateOutput struct {
-	ID int `json:"id"`
+	ID *int `json:"id,omitempty"`
 }
 
 // ErrorResponse defines model for ErrorResponse.
@@ -59,6 +69,9 @@ type ServerInterface interface {
 	// Создать компонент
 	// (POST /component)
 	CreateComponent(w http.ResponseWriter, r *http.Request)
+	// Получить компонент по id
+	// (GET /component/{id})
+	GetComponentID(w http.ResponseWriter, r *http.Request, id string)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -74,6 +87,12 @@ func (_ Unimplemented) CreateCategory(w http.ResponseWriter, r *http.Request) {
 // Создать компонент
 // (POST /component)
 func (_ Unimplemented) CreateComponent(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Получить компонент по id
+// (GET /component/{id})
+func (_ Unimplemented) GetComponentID(w http.ResponseWriter, r *http.Request, id string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -105,6 +124,31 @@ func (siw *ServerInterfaceWrapper) CreateComponent(w http.ResponseWriter, r *htt
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateComponent(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetComponentID operation middleware
+func (siw *ServerInterfaceWrapper) GetComponentID(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetComponentID(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -233,6 +277,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/component", wrapper.CreateComponent)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/component/{id}", wrapper.GetComponentID)
+	})
 
 	return r
 }
@@ -307,6 +354,50 @@ func (response CreateComponent500JSONResponse) VisitCreateComponentResponse(w ht
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetComponentIDRequestObject struct {
+	ID string `json:"id"`
+}
+
+type GetComponentIDResponseObject interface {
+	VisitGetComponentIDResponse(w http.ResponseWriter) error
+}
+
+type GetComponentID200JSONResponse Component
+
+func (response GetComponentID200JSONResponse) VisitGetComponentIDResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetComponentID400JSONResponse ErrorResponse
+
+func (response GetComponentID400JSONResponse) VisitGetComponentIDResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetComponentID404JSONResponse ErrorResponse
+
+func (response GetComponentID404JSONResponse) VisitGetComponentIDResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetComponentID500JSONResponse ErrorResponse
+
+func (response GetComponentID500JSONResponse) VisitGetComponentIDResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// Создать категорию
@@ -315,6 +406,9 @@ type StrictServerInterface interface {
 	// Создать компонент
 	// (POST /component)
 	CreateComponent(ctx context.Context, request CreateComponentRequestObject) (CreateComponentResponseObject, error)
+	// Получить компонент по id
+	// (GET /component/{id})
+	GetComponentID(ctx context.Context, request GetComponentIDRequestObject) (GetComponentIDResponseObject, error)
 }
 
 type StrictHandlerFunc = strictnethttp.StrictHTTPHandlerFunc
@@ -401,6 +495,32 @@ func (sh *strictHandler) CreateComponent(w http.ResponseWriter, r *http.Request)
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CreateComponentResponseObject); ok {
 		if err := validResponse.VisitCreateComponentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetComponentID operation middleware
+func (sh *strictHandler) GetComponentID(w http.ResponseWriter, r *http.Request, id string) {
+	var request GetComponentIDRequestObject
+
+	request.ID = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetComponentID(ctx, request.(GetComponentIDRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetComponentID")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetComponentIDResponseObject); ok {
+		if err := validResponse.VisitGetComponentIDResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
