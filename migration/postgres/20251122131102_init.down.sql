@@ -1,0 +1,6 @@
+BEGIN;
+
+DROP TABLE IF EXISTS component;
+DROP TABLE IF EXISTS category;
+
+COMMIT;

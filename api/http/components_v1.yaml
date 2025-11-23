@@ -99,7 +99,7 @@ paths:
 #    get:
 #      summary: Получить список всех компонентов (с фильтром по категории)
 #      parameters:
-#        - name: category
+#        - name: categoryId
 #          in: query
 #          schema:
 #            type: string
@@ -123,26 +123,30 @@ components:
           type: string
         price:
           type: integer
-        category:
-          type: string
         description:
           type: string
+        categoryId:
+          type: integer
     ComponentCreateInput:
       type: object
       required:
         - name
         - price
-        - category
+        - categoryId
         - description
       properties:
         name:
           type: string
+          nullable: true
         price:
           type: integer
-        category:
-          type: string
+          nullable: true
         description:
           type: string
+          nullable: true
+        categoryId:
+          type: integer
+          nullable: true
     ComponentCreateOutput:
       type: object
       required:
@@ -157,10 +161,10 @@ components:
           type: string
         price:
           type: integer
-        category:
-          type: string
         description:
           type: string
+        categoryId:
+          type: integer
     ErrorResponse:
       type: object
       required:

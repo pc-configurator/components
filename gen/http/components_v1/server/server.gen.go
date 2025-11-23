@@ -15,10 +15,10 @@ import (
 
 // ComponentCreateInput defines model for ComponentCreateInput.
 type ComponentCreateInput struct {
-	Category    string `json:"category"`
-	Description string `json:"description"`
-	Name        string `json:"name"`
-	Price       int    `json:"price"`
+	CategoryID  *int    `json:"categoryId"`
+	Description *string `json:"description"`
+	Name        *string `json:"name"`
+	Price       *int    `json:"price"`
 }
 
 // ComponentCreateOutput defines model for ComponentCreateOutput.

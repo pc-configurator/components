@@ -1,11 +1,7 @@
 package validation
 
-func MinString(value string, min int) bool {
-	return len([]rune(value)) >= min
-}
-
-func MaxString(value string, max int) bool {
-	return len([]rune(value)) <= max
+func MinString(value *string, min int) bool {
+	return len([]rune(*value)) >= min
 }
 
 type ErrorFields map[string]string

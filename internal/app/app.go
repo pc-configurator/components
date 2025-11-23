@@ -26,7 +26,7 @@ func Run(ctx context.Context, c config.Config) error {
 	}
 
 	// UseCase
-	uc := usecase.New(postgres_entities.New())
+	uc := usecase.New(postgres_entities.New(pgpool))
 
 	// HTTP
 	r := router.New()

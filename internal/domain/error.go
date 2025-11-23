@@ -5,24 +5,31 @@ import (
 )
 
 var (
-	ValidationError = errors.New("validation_error")
-	InternalError   = errors.New("internal_error")
+	ErrValidation       = errors.New("validation_error")
+	ErrInternal         = errors.New("internal_error")
+	ErrCategoryNotFound = errors.New("category_not_found")
 )
 
-type ErrorWithDetails struct {
+type ErrWithDetails struct {
 	Code          string             `json:"code"`
 	InvalidFields *map[string]string `json:"invalidFields,omitempty"`
 }
 
-func NewValidationError(invalidFields map[string]string) ErrorWithDetails {
-	return ErrorWithDetails{
-		Code:          ValidationError.Error(),
+func NewValidationError(invalidFields map[string]string) ErrWithDetails {
+	return ErrWithDetails{
+		Code:          ErrValidation.Error(),
 		InvalidFields: &invalidFields,
 	}
 }
 
-func NewInternalError() ErrorWithDetails {
-	return ErrorWithDetails{
-		Code: InternalError.Error(),
+func NewInternalError() ErrWithDetails {
+	return ErrWithDetails{
+		Code: ErrInternal.Error(),
+	}
+}
+
+func NewCategoryNotFoundError() ErrWithDetails {
+	return ErrWithDetails{
+		Code: ErrCategoryNotFound.Error(),
 	}
 }

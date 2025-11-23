@@ -4,6 +4,6 @@ type Component struct {
 	ID          int
 	Name        string
 	Price       int
-	Category    string
+	CategoryID  string
 	Description string
 }

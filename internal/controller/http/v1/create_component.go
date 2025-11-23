@@ -15,7 +15,7 @@ func (h Handlers) CreateComponent(ctx context.Context, request http_server.Creat
 	input := dto.CreateComponentInput{
 		Name:        request.Body.Name,
 		Price:       request.Body.Price,
-		Category:    request.Body.Category,
+		CategoryID:  request.Body.CategoryID,
 		Description: request.Body.Description,
 	}
 
@@ -26,6 +26,10 @@ func (h Handlers) CreateComponent(ctx context.Context, request http_server.Creat
 		var errorFields validation.ErrorFields
 		if errors.As(err, &errorFields) {
 			return http_server.CreateComponent400JSONResponse{Error: domain.NewValidationError(errorFields)}, nil
+		}
+
+		if errors.Is(err, domain.ErrCategoryNotFound) {
+			return http_server.CreateComponent400JSONResponse{Error: domain.NewCategoryNotFoundError()}, nil
 		}
 
 		return http_server.CreateComponent500JSONResponse{Error: domain.NewInternalError()}, nil
