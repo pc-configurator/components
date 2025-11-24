@@ -8,10 +8,11 @@ import (
 	"syscall"
 
 	"github.com/pc-configurator/components/config"
+	"github.com/pc-configurator/components/internal/adapter/redis_adapter"
 	"github.com/pc-configurator/components/pkg/postgres"
 	"github.com/pc-configurator/components/pkg/redis"
 
-	"github.com/pc-configurator/components/internal/adapter/postgres_entities"
+	"github.com/pc-configurator/components/internal/adapter/postgres_adapter"
 	"github.com/pc-configurator/components/internal/controller/http"
 	"github.com/pc-configurator/components/internal/usecase"
 	"github.com/pc-configurator/components/pkg/httpserver"
@@ -33,7 +34,7 @@ func Run(ctx context.Context, c config.Config) error {
 	}
 
 	// UseCase
-	uc := usecase.New(postgres_entities.New(pgpool), redisClient)
+	uc := usecase.New(postgres_adapter.New(pgpool), redis_adapter.New(redisClient))
 
 	// HTTP
 	r := router.New()

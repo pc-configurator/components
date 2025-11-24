@@ -1,4 +1,4 @@
-package postgres_entities
+package postgres_adapter
 
 var (
 	ComponentCategoryForeignKey = "component_category_id_fkey"

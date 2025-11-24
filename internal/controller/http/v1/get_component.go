@@ -32,5 +32,11 @@ func (h Handlers) GetComponentID(ctx context.Context, request http_server.GetCom
 		return http_server.GetComponentID500JSONResponse{Error: domain.NewErrorWithDetails(domain.ErrInternal)}, nil
 	}
 
-	return http_server.GetComponentID200JSONResponse{ID: &res.ID}, nil
+	return http_server.GetComponentID200JSONResponse{
+		CategoryID:  &res.CategoryID,
+		Description: &res.Description,
+		ID:          &res.ID,
+		Name:        &res.Name,
+		Price:       &res.Price,
+	}, nil
 }

@@ -15,6 +15,11 @@ func (u *UseCase) GetComponent(ctx context.Context, input dto.GetComponentIDInpu
 		return output, logger.NewErrorWithPath("input.Validate", err)
 	}
 
+	outputFromCache, err := u.cacheStorage.GetComponent(ctx, input.ID)
+	if err == nil {
+		return outputFromCache, nil
+	}
+
 	component, err := u.entitiesStorage.GetComponent(ctx, input)
 	if err != nil {
 		return output, logger.NewErrorWithPath("u.postgres.GetComponent", err)
@@ -23,6 +28,8 @@ func (u *UseCase) GetComponent(ctx context.Context, input dto.GetComponentIDInpu
 	output = dto.GetComponentIDOutput{
 		Component: component,
 	}
+
+	u.cacheStorage.SetComponent(ctx, output)
 
 	return output, nil
 }

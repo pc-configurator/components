@@ -8,6 +8,8 @@ import (
 )
 
 type CacheStorage interface {
+	GetComponent(ctx context.Context, componentID string) (dto.GetComponentIDOutput, error)
+	SetComponent(ctx context.Context, component dto.GetComponentIDOutput)
 }
 
 type EntitiesStorage interface {

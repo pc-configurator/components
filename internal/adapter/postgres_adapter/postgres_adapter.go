@@ -1,4 +1,4 @@
-package postgres_entities
+package postgres_adapter
 
 import "github.com/pc-configurator/components/pkg/postgres"
 
